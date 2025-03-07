@@ -1,0 +1,21 @@
+@baseUrl = http://localhost:5112
+@tokenEndpoint = {{baseUrl}}/connect/token
+@clientId = test-client
+@clientSecret = test-secret
+
+### Request a token using client credentials flow
+# @name token
+POST {{tokenEndpoint}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_id={{clientId}}
+&client_secret={{clientSecret}}
+&scope=api
+
+### Access the protected API
+GET {{baseUrl}}/api/testapi
+Authorization: Bearer {{token.response.body.access_token}}
+
+### Access Swagger UI
+GET {{baseUrl}}/swagger

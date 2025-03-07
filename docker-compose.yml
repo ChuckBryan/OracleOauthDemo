@@ -1,0 +1,49 @@
+services:
+  oracle:
+    image: gvenzl/oracle-free:full
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_RANDOM_PASSWORD=true
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    networks:
+      - app-network
+
+  openiddict-api:
+    build:
+      context: .
+      dockerfile: OpenIddictDemo/Dockerfile
+    container_name: openiddict-api
+    ports:
+      - "5112:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=mssql;Database=OpenIddictDemo;User=sa;Password=YourStrongPassword123;TrustServerCertificate=True
+    depends_on:
+      - mssql
+    networks:
+      - app-network
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrongPassword123
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  oracle-data:
+  sqlserver-data:
