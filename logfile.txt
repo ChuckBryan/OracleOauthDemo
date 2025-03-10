@@ -1,0 +1,85 @@
+      Content root path: /app
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[1]
+      Request:
+      Protocol: HTTP/1.1
+      Method: POST
+      Scheme: http
+      PathBase: 
+      Path: /connect/token
+      Connection: close
+      Host: openiddict-api:80
+      Content-Type: application/x-www-form-urlencoded
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[3]
+      RequestBody: 
+info: OpenIddictDemo.RequestLoggingMiddleware[0]
+      Raw token request body: 
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ResolveRequestUri.
+info: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The request URI matched a server endpoint: Token.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+InferEndpointType.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ValidateHostHeader.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ExtractPostRequest`1[[OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ValidateClientAuthenticationMethod`1[[OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ExtractBasicAuthenticationCredentials`1[[OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+info: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The token request was successfully extracted: {}.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ExtractTokenRequest.
+info: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The token request was rejected because the mandatory 'grant_type' parameter was missing.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ValidateTokenRequestContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ValidateGrantType.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ValidateTokenRequestContext was marked as rejected by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ValidateGrantType.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ValidateTokenRequest.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was marked as rejected by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ValidateTokenRequest.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+AttachErrorParameters.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+AttachCustomErrorParameters.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+NormalizeErrorResponse.
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+AttachHttpResponseCode`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+AttachCacheControlHeader`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+AttachWwwAuthenticateHeader`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+info: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The response was successfully returned as a JSON document: {
+        "error": "invalid_request",
+        "error_description": "The mandatory 'grant_type' parameter is missing.",
+        "error_uri": "https://documentation.openiddict.com/errors/ID2029"
+      }.
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[2]
+      Response:
+      StatusCode: 400
+      Content-Type: application/json;charset=UTF-8
+      Cache-Control: [Redacted]
+      Expires: Thu, 01 Jan 1970 00:00:00 GMT
+      Pragma: [Redacted]
+      Content-Length: 176
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ProcessJsonResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was marked as handled by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ProcessJsonResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ApplyTokenResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+dbug: OpenIddict.Server.OpenIddictServerDispatcher[0]
+      The event OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext was marked as handled by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ApplyTokenResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext, OpenIddict.Server, Version=6.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[4]
+      ResponseBody: {
+        "error": "invalid_request",
+        "error_description": "The mandatory 'grant_type' parameter is missing.",
+        "error_uri": "https://documentation.openiddict.com/errors/ID2029"
+      }
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[8]
+      Duration: 440.3141ms

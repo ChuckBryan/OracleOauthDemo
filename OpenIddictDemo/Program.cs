@@ -3,8 +3,32 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using OpenIddictDemo.Data;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure logging to always show debug logs for OpenIddict regardless of environment
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddFilter("OpenIddict", LogLevel.Debug);
+builder.Logging.AddFilter("OpenIddict.Server", LogLevel.Debug);
+builder.Logging.AddFilter("OpenIddict.Validation", LogLevel.Debug);
+builder.Logging.AddFilter("Microsoft.AspNetCore.HttpLogging", LogLevel.Information);
+
+// Add HTTP request/response logging with enhanced request body logging
+builder.Services.AddHttpLogging(logging =>
+{
+    logging.LoggingFields = HttpLoggingFields.All;
+    logging.RequestHeaders.Add("Authorization");
+    logging.RequestHeaders.Add("Content-Type");
+    logging.ResponseHeaders.Add("Content-Type");
+    logging.MediaTypeOptions.AddText("application/x-www-form-urlencoded");
+    logging.RequestBodyLogLimit = 4096;
+    logging.ResponseBodyLogLimit = 4096;
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -82,7 +106,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "OpenIddict Demo API", Version = "v1" });
-    
+
     // Define the OAuth2.0 scheme that's in use
     options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
     {
@@ -99,7 +123,7 @@ builder.Services.AddSwaggerGen(options =>
             }
         }
     });
-    
+
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -118,6 +142,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Enable HTTP request/response logging for all environments
+app.UseHttpLogging();
+
+// Add our custom request logging middleware
+app.UseMiddleware<OpenIddictDemo.RequestLoggingMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -126,7 +156,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "OpenIddict Demo API v1");
     });
-    
+
     // Initialize the database
     using (var scope = app.Services.CreateScope())
     {
@@ -181,7 +211,7 @@ public class TestDataSeeder : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        
+
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
@@ -210,7 +240,7 @@ public class TestDataSeeder : IHostedService
                         OpenIddictConstants.Permissions.Prefixes.Scope + "api"
                     }
                 }, cancellationToken);
-                
+
                 Console.WriteLine("Created test client: test-client with secret: test-secret");
             }
             else

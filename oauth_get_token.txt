@@ -2,7 +2,7 @@ CREATE OR REPLACE PROCEDURE oauth_get_token AS
   -- Variables for OAuth token request
   req_token       UTL_HTTP.REQ;
   resp_token      UTL_HTTP.RESP;
-  token_url       VARCHAR2(256) := 'https://localhost:7104/connect/token';
+  token_url       VARCHAR2(256) := 'http://openiddict-api:80/connect/token';
   client_id       VARCHAR2(100) := 'test-client';
   client_secret   VARCHAR2(100) := 'test-secret';
   scope           VARCHAR2(100) := 'api';
