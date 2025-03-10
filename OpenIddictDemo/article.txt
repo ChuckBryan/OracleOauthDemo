@@ -1,0 +1,203 @@
+Auth 2.0 is an open standard for authorization used for granting applications limited access to user resources without exposing their credentials. Nowadays, it is broadly used for securely accessing web services and APIs.
+
+In this post, we’ll explore how to leverage PL/SQL as a client for validating and using OAuth 2.0 tokens. This approach allows Oracle Database developers to seamlessly integrate OAuth 2.0 authentication into their applications, enabling secure interactions with external APIs directly from within the database.
+
+We’ll walk through the process of configuring Oracle Wallet for secure HTTPS communication and using an OAuth 2.0 access token to authenticate API requests. By the end of this guide, you’ll have a solid understanding of how to implement OAuth 2.0 authorization in PL/SQL, empowering your applications with enhanced security and functionality.
+
+In this demo, we’ll connect to the oauth2.googleapis.com server to get a valid access token that allows us the interaction with the GMail’s API. Refer to the Google’s guide for more details.
+
+Google Workspace: Learn about authentication and authorization
+
+Create the Oracle Wallet and import the servers certificates.
+To ensure secure HTTPS communication, Oracle requires the use of an Oracle Wallet. The Oracle Wallet is a secure software container used to store authentication and signing credentials, including server certificates necessary for establishing secure connections.
+
+Why Oracle Wallet?
+Oracle Security Administrator’s Guide: Using Oracle Wallet Manager
+
+We’ll start by creating a new wallet using Oracle’s orapki utility and protecting it with a strong password. By default, the Oracle Wallet is located in the directory specified by the WALLET_LOCATION parameter in the sqlnet.ora file.
+
+net_service_name=
+    (DESCRIPTION =
+       (ADDRESS=(PROTOCOL=tcps)(HOST=sales-svr)(PORT=1234))
+       (SECURITY=(WALLET_LOCATION=SYSTEM))
+       (CONNECT_DATA=(SERVICE_NAME=sales.us.example.com))
+     ) 
+If WALLET_LOCATION is not specified, it is typically located in the $ORACLE_HOME/network/admin directory.
+
+orapki wallet create creates a new directory holding cwallet.sso and ewallet.p12. Enabling auto login creates an obfuscated copy of the wallet, which is then used automatically without requiring human interventions to supply the necessary passwords.
+
+sh-4.2$ orapki wallet create -wallet wallet -pwd [your_password] -auto_login
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ 
+We need to import the whole chain of certificates in the wallet. The next code downloads and split them in different files that are renamed according to the certificate name (CN).
+
+sh-4.2$ openssl s_client -showcerts -verify 5 -connect oauth2.googleapis.com:443 < /dev/null |
+>    awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/{ if(/BEGIN CERTIFICATE/){a++}; out="cert"a".pem"; print >out}'
+verify depth is 5
+depth=3 C = BE, O = GlobalSign nv-sa, OU = Root CA, CN = GlobalSign Root CA
+verify return:1
+depth=2 C = US, O = Google Trust Services LLC, CN = GTS Root R1
+verify return:1
+depth=1 C = US, O = Google Trust Services LLC, CN = GTS CA 1C3
+verify return:1
+depth=0 CN = *.googleapis.com
+verify return:1
+DONE
+sh-4.2$ for cert in *.pem; do 
+>         newname=$(openssl x509 -noout -subject -in $cert | sed -nE 's/.*CN ?= ?(.*)/\1/; s/[ ,.*]/_/g; s/__/_/g; s/_-_/-/; s/^_//g;p' | tr '[:upper:]' '[:lower:]').pem
+>         echo "${newname}"; mv "${cert}" "${newname}" 
+> done
+googleapis_com.pem
+gts_ca_1c3.pem
+gts_root_r1.pem
+googleapis_com.pem
+sh-4.2$ ls -lhtr *.pem
+-rw-r--r-- 1 oracle oinstall 9.2K May 28 13:50 googleapis_com.pem
+-rw-r--r-- 1 oracle oinstall 1.9K May 28 13:54 gts_root_r1.pem
+-rw-r--r-- 1 oracle oinstall 2.0K May 28 13:54 gts_ca_1c3.pem
+sh-4.2$ 
+Now we can import the certificates into the wallet. This ensures that your Oracle Database trusts them when making HTTPS requests.
+
+sh-4.2$ orapki wallet add -wallet wallet -trusted_cert -cert "./googleapis_com.pem" -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ orapki wallet add -wallet wallet -trusted_cert -cert "./gts_root_r1.pem" -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ orapki wallet add -wallet wallet -trusted_cert -cert "./gts_ca_1c3.pem" -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ 
+Let’s check the certificated added to the wallet.
+
+sh-4.2$ orapki wallet display -wallet wallet -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Requested Certificates: 
+User Certificates:
+Trusted Certificates: 
+Subject:        CN=GTS Root R1,O=Google Trust Services LLC,C=US
+Subject:        CN=*.googleapis.com
+Subject:        CN=GTS CA 1C3,O=Google Trust Services LLC,C=US
+sh-4.2$ 
+Create the ACL privileges to allow HTTPS traffic.
+Access Control Lists (ACLs) in Oracle Database are security mechanisms that define and control the access permissions for users and roles to network services. ACLs specify which users or roles are allowed to connect to specific network services, such as HTTP or FTP, ensuring secure and controlled access to external resources.
+
+We’ll define a new ACL named https_acl granting access to the remote service for the user SYSTEM.
+
+BEGIN
+  -- Create the ACL
+  DBMS_NETWORK_ACL_ADMIN.create_acl (
+    acl          => 'https_acl.xml',
+    description  => 'ACL for HTTPS access to OAuth2',
+    principal    => 'SYSTEM',
+    is_grant     => TRUE,
+    privilege    => 'connect'
+  );
+  -- Add resolve privilege
+  DBMS_NETWORK_ACL_ADMIN.add_privilege (
+    acl         => 'https_acl.xml',
+    principal   => 'SYSTEM',
+    is_grant    => TRUE,
+    privilege   => 'resolve'
+  );
+  -- Assign the ACL to the specified host
+  DBMS_NETWORK_ACL_ADMIN.assign_acl (
+    acl  => 'https_acl.xml',
+    host => 'oauth2.googleapis.com'
+  );
+END;
+/
+ -- Check the assigned ACL privileges
+SELECT acl,
+       principal,
+       privilege,
+       is_grant
+  FROM dba_network_acl_privileges
+ WHERE acl = '/sys/acls/https_acl.xml';
+select host, lower_port, upper_port, acl, acl_owner
+from dba_network_acls
+WHERE acl = '/sys/acls/https_acl.xml';
+Create the OAuth request procedure.
+The function shown below establishes the connection with the OAuth service, requests a new access token and parses the JSON response.
+
+create or replace function oauth_request return varchar2 AS
+  http_req UTL_HTTP.req;
+  http_resp UTL_HTTP.resp;
+  url VARCHAR2(200)           := 'https://oauth2.googleapis.com/token';
+  client_id     varchar2(200) := '[YOUR_CLIENT_ID].apps.googleusercontent.com';
+  client_secret varchar2(200) := '[YOUR_CLIENT_SECRET]';
+  refresh_token varchar2(200) := '[YOUR_REFRESH_TOKEN]';
+  params VARCHAR2(400);
+  buffer VARCHAR2(2000);
+  json_response JSON_OBJECT_T;
+  access_token   VARCHAR2(32767);
+  expires_in     NUMBER;
+  scope          VARCHAR2(32767);
+  token_type     VARCHAR2(32767);
+BEGIN
+  -- Set up the request parameters
+  params := 'client_id='     || UTL_URL.escape(client_id, TRUE)      || '&' ||
+            'client_secret=' || UTL_URL.escape(client_secret, TRUE)  || '&' ||
+            'refresh_token=' || UTL_URL.escape(refresh_token, TRUE)  || '&' ||
+            'grant_type=refresh_token'; 
+   UTL_HTTP.set_wallet('file:[YOUR_WALLET_LOCATION]', '[YOUR_WALLET_PASSWORD]');
+  -- Open the HTTP request
+  http_req := UTL_HTTP.begin_request(url, 'POST', UTL_HTTP.http_version_1_1);
+  -- Set the request headers
+  UTL_HTTP.set_header(http_req, 'Content-Type', 'application/x-www-form-urlencoded');
+  UTL_HTTP.set_header(http_req, 'Content-Length', LENGTH(params));
+  -- Write the request parameters to the HTTP request
+  UTL_HTTP.write_text(http_req, params);
+  -- Get the HTTP response
+  http_resp := UTL_HTTP.get_response(http_req);
+  -- Read the response
+  UTL_HTTP.read_text(http_resp, buffer);
+  -- Print the response
+  DBMS_OUTPUT.put_line(buffer);
+      -- Parse the JSON response
+  BEGIN
+    json_response := JSON_OBJECT_T.parse(buffer);
+    access_token := json_response.get_string('access_token');
+    expires_in := json_response.get_number('expires_in');
+    scope := json_response.get_string('scope');
+    token_type := json_response.get_string('token_type');
+    -- Output the values
+    DBMS_OUTPUT.put_line('Access Token: ' || access_token);
+    DBMS_OUTPUT.put_line('Expires In: ' || expires_in);
+    DBMS_OUTPUT.put_line('Scope: ' || scope);
+    DBMS_OUTPUT.put_line('Token Type: ' || token_type);
+  END;
+  -- End the HTTP response
+  UTL_HTTP.end_response(http_resp);
+  return(access_token);
+EXCEPTION
+  WHEN UTL_HTTP.end_of_body THEN
+    UTL_HTTP.end_response(http_resp);
+  when others then
+    dbms_output.put_line(utl_http.get_detailed_sqlerrm);
+END oauth_request;
+The request response includes:
+
+The access token that will allow your temporary access to the API.
+The expiration time of the token in seconds. Once expired the token must be refreshed.
+The scope of application of the token. In this case, this token allows access to GMail’s API.
+The type of the token. In this case, Bearer, that can be simply understood as “give access to the bearer of this token. This is the most commonly used type of token.
+{
+  "access_token": "ya29.a0AXooCgvgJuTDytAaS-... this is a very long token .................cYgx89D8xJgwjOQ0173",
+  "expires_in": 3600,  -- seconds (1 hour)
+  "scope": "https://mail.google.com/",
+  "token_type": "Bearer"
+}
+To wrap up
+In this post, we’ve explained the necessity of creating an Oracle Wallet to securely store server certificates required for HTTPS communication. By following the steps to create the wallet and import the necessary certificates, you can ensure that your PL/SQL applications can securely communicate with external OAuth 2.0 services, paving the way for secure and authenticated API interactions directly from the Oracle Database.
