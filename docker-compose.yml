@@ -5,8 +5,10 @@ services:
     ports:
       - "1521:1521"
     environment:
-      - ORACLE_PASSWORD=OraclePassword123
+      - ORACLE_RANDOM_PASSWORD=yes
       - ORACLE_CHARACTERSET=AL32UTF8
+      - APP_USER=OAUTH_DEMO_USER
+      - APP_USER_PASSWORD=DemoPassword123
     volumes:
       - oracle-data:/opt/oracle/oradata
     networks:
