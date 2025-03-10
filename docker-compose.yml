@@ -11,6 +11,8 @@ services:
       - APP_USER_PASSWORD=DemoPassword123
     volumes:
       - oracle-data:/opt/oracle/oradata
+      - ./init_scripts:/container-entrypoint-initdb.d
+      - ./startup_scripts:/container-entrypoint-startdb.d
     networks:
       - app-network
 

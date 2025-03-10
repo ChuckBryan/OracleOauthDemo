@@ -1,70 +1,102 @@
-# Oracle OAuth Demo
+# Oracle OAuth Demo with OpenIddict
 
 ## Project Overview
 
-This project demonstrates how to implement OAuth 2.0 client credentials flow using Oracle PL/SQL. It shows how to make authenticated API calls to OAuth endpoints directly from an Oracle database, which can be useful for system-to-system integrations.
+This project demonstrates integration between Oracle Database and OpenIddict for OAuth 2.0 client credentials flow. It showcases how to make authenticated API calls from Oracle PL/SQL to an OpenIddict-based OAuth endpoint.
 
 ## Key Features
 
-- Implementation of OAuth 2.0 client credentials flow in PL/SQL
-- Direct API calls to OAuth endpoints from Oracle database
-- JSON response parsing and token handling
-- Example of using UTL_HTTP for making HTTP requests
+- Oracle Database PL/SQL integration with OAuth 2.0
+- OpenIddict OAuth 2.0 server implementation
+- Client Credentials flow demonstration
+- Docker containerization for both Oracle and OpenIddict services
+- Automated database initialization and configuration
 
-## Important Security Notice
+## Technical Components
 
-⚠️ **This is a demonstration project only!**
+### Oracle Database Setup
 
-- The credentials and tokens used in this project are for demonstration purposes only
-- In a production environment, never store sensitive credentials (client IDs, secrets, tokens) directly in code
-- Use secure credential vaults, Oracle Wallet, or other appropriate security measures for storing sensitive information
-- The code contains simplified error handling and security measures for clarity - production implementations should include robust security controls
+- Automated initialization scripts for database configuration
+- Network ACL setup for secure API communication
+- PL/SQL function for OAuth token requests
+- Automated user creation and permission management
 
-## Technical Implementation
+### OpenIddict API
 
-The project includes:
+- .NET-based OAuth 2.0 authorization server
+- Client credentials flow implementation
+- Dockerized deployment
+- Test API endpoints for validation
 
-- PL/SQL function for obtaining OAuth tokens
-- HTTP request handling using UTL_HTTP
-- JSON response parsing
-- Example of making authenticated API calls
+## Configuration
+
+### Database Initialization
+
+The project uses Docker initialization scripts to automatically configure:
+
+- Database user creation (OAUTH_DEMO_USER)
+- Network ACL permissions for API access
+- UTL_HTTP and UTL_URL grants
+- oauth_request function for token requests
+
+### Environment Setup
+
+```yaml
+services:
+  oracle:
+    environment:
+      - ORACLE_RANDOM_PASSWORD=yes # Generates random SYS/SYSTEM passwords
+      - APP_USER=OAUTH_DEMO_USER # Creates demo user
+      - APP_USER_PASSWORD=DemoPassword123
+```
+
+### Security Note
+
+⚠️ **Important:** The credentials used in this demo are for demonstration purposes only. In a production environment:
+
+- Use secure credential management
+- Don't store passwords in code or configuration files
+- Implement proper security measures
+
+## Initialization and Startup Scripts
+
+The project includes two types of scripts:
+
+### Initialization Scripts (/init_scripts)
+
+- Run once during first-time database setup
+- Configure ACLs, users, and permissions
+- Create the oauth_request function
+
+### Startup Scripts (/startup_scripts)
+
+- Run on every container startup
+- Verify ACL configurations
+- Check user permissions
+- Validate function availability
+
+## Usage
+
+### Making OAuth Requests
+
+The oauth_request function can be called from PL/SQL to obtain OAuth tokens:
+
+```sql
+SELECT oauth_request() FROM DUAL;
+```
 
 ## Prerequisites
 
-- Oracle Database instance
-- Network access to OAuth endpoints
-- Required Oracle privileges for UTL_HTTP and network access
+- Docker and Docker Compose
+- Oracle Database container support
+- .NET SDK (for local development)
 
-## Setup and Configuration
+## Getting Started
 
-1. Configure the OAuth client credentials
-2. Update the PL/SQL function with your endpoint details
-3. Ensure proper database access privileges are set
-
-## Usage Example
-
-The main functionality is demonstrated in the oauth_request function, which:
-
-1. Constructs the OAuth token request
-2. Makes the HTTP call to the token endpoint
-3. Parses the JSON response
-4. Returns the access token for subsequent API calls
-
-## Production Considerations
-
-When implementing this in a production environment:
-
-1. Use secure credential storage
-2. Implement proper error handling
-3. Add logging and monitoring
-4. Consider token caching and refresh strategies
-5. Implement proper security headers and SSL verification
-6. Add rate limiting and retry logic
-7. Follow your organization's security policies
-
-## License
-
-This project is intended for educational purposes.
+1. Clone the repository
+2. Run `docker-compose up`
+3. Wait for initialization scripts to complete
+4. Access the OpenIddict API at http://localhost:5112
 
 ## Contributing
 
