@@ -133,9 +133,137 @@ END;
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- Oracle Database container support
+### Required Software
+
+- Docker Desktop
+  - Must be installed and running
+  - Windows or Linux containers supported
+  - Minimum 4GB of memory allocated to Docker
 - .NET SDK (for local development)
+- Oracle Database container support
+- SQL client (DBeaver, SQL Developer, or VS Code with Oracle extension)
+
+### System Requirements
+
+- Minimum 8GB RAM
+- 10GB free disk space
+- Internet connection for pulling Docker images
+
+## Docker Commands
+
+### Starting the Environment
+
+```bash
+# Start all services
+docker-compose up
+
+# Start in detached mode (run in background)
+docker-compose up -d
+```
+
+### Stopping the Environment
+
+```bash
+# Stop and remove containers
+docker-compose down
+
+# Stop, remove containers, and remove volumes
+docker-compose down -v
+```
+
+### Managing Oracle Data Volume
+
+```bash
+# Remove Oracle data volume (required for database initialization changes)
+docker volume rm oracleoauthdemo_oracle-data
+```
+
+⚠️ **Important Note**: If you need to modify any database initialization scripts or change how the database is configured, you must:
+
+1. Stop all containers (`docker-compose down`)
+2. Remove the Oracle data volume (`docker volume rm oracleoauthdemo_oracle-data`)
+3. Start the environment again (`docker-compose up`)
+
+## SQL Implementation Details
+
+### Network ACL Setup
+
+```sql
+-- Creates network access control for OpenIddict API connections
+DBMS_NETWORK_ACL_ADMIN.create_acl (
+  acl          => 'openiddict_acl.xml',
+  description  => 'ACL for OpenIddict API',
+  principal    => 'OAUTH_DEMO_USER',
+  is_grant     => TRUE,
+  privilege    => 'connect'
+);
+```
+
+This ACL configuration allows the OAUTH_DEMO_USER to make HTTP connections to the OpenIddict API.
+
+### OAuth Request Function
+
+```sql
+-- Function to obtain OAuth token
+CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.oauth_request RETURN VARCHAR2 AS
+  -- Function variables
+  http_req   UTL_HTTP.req;
+  http_resp  UTL_HTTP.resp;
+
+  -- OAuth endpoint configuration
+  url        VARCHAR2(200) := 'http://openiddict-api:80/connect/token';
+  client_id  VARCHAR2(200) := 'test-client';
+  client_secret VARCHAR2(200) := 'test-secret';
+
+  -- Function implementation
+  // ...implementation details...
+END;
+```
+
+This function handles the HTTP POST request to obtain an OAuth token using client credentials flow.
+
+### Token Extraction Function
+
+```sql
+-- Function to parse JSON and extract access token
+CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.extract_access_token(
+  json_response VARCHAR2
+) RETURN VARCHAR2 AS
+  -- Implementation parses JSON response to extract token
+  // ...implementation details...
+END;
+```
+
+Extracts the access token from the OAuth server's JSON response.
+
+### Convenience Function
+
+```sql
+-- Combined function for easy token retrieval
+CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.get_access_token RETURN VARCHAR2 AS
+  -- Combines oauth_request and extract_access_token
+  json_response VARCHAR2(4000);
+BEGIN
+  json_response := OAUTH_DEMO_USER.oauth_request();
+  RETURN OAUTH_DEMO_USER.extract_access_token(json_response);
+END;
+```
+
+Provides a simplified interface for obtaining an access token in a single function call.
+
+### Protected API Access Function
+
+```sql
+-- Function to call protected APIs using OAuth token
+CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.call_protected_api(
+  api_url VARCHAR2 DEFAULT 'http://openiddict-api:80/api/testapi'
+) RETURN VARCHAR2 AS
+  -- Makes authenticated API calls using the OAuth token
+  // ...implementation details...
+END;
+```
+
+Demonstrates how to use the obtained OAuth token to make authenticated API calls.
 
 ## Getting Started
 
