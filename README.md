@@ -18,7 +18,7 @@ This project demonstrates integration between Oracle Database and OpenIddict for
 
 - Automated initialization scripts for database configuration
 - Network ACL setup for secure API communication
-- PL/SQL function for OAuth token requests
+- PL/SQL functions for OAuth token requests and parsing
 - Automated user creation and permission management
 
 ### OpenIddict API
@@ -37,7 +37,7 @@ The project uses Docker initialization scripts to automatically configure:
 - Database user creation (OAUTH_DEMO_USER)
 - Network ACL permissions for API access
 - UTL_HTTP and UTL_URL grants
-- oauth_request function for token requests
+- PL/SQL functions for OAuth operations
 
 ### Environment Setup
 
@@ -66,7 +66,8 @@ The project includes two types of scripts:
 
 - Run once during first-time database setup
 - Configure ACLs, users, and permissions
-- Create the oauth_request function
+- Create PL/SQL functions in the OAUTH_DEMO_USER schema
+- Set up token request and parsing capabilities
 
 ### Startup Scripts (/startup_scripts)
 
@@ -77,12 +78,57 @@ The project includes two types of scripts:
 
 ## Usage
 
+### PL/SQL Functions Overview
+
+All the following functions are created in the **OAUTH_DEMO_USER schema** (not as SYS):
+
+1. **oauth_request** - Makes the HTTP request to the OAuth server
+
+   ```sql
+   SELECT OAUTH_DEMO_USER.oauth_request() FROM DUAL;
+   ```
+
+   Returns the raw JSON response from the OAuth server.
+
+2. **extract_access_token** - Parses the JSON response to extract just the access token
+   ```sql
+   SELECT OAUTH_DEMO_USER.extract_access_token(json_response) FROM DUAL;
+   ```
+3. **get_access_token** - Convenience function that combines the above two functions
+   ```sql
+   SELECT OAUTH_DEMO_USER.get_access_token() FROM DUAL;
+   ```
+   Returns only the access token value, ready for use in API calls.
+
 ### Making OAuth Requests
 
-The oauth_request function can be called from PL/SQL to obtain OAuth tokens:
+To get an access token for API calls:
 
 ```sql
-SELECT oauth_request() FROM DUAL;
+-- Get the raw JSON response
+SELECT OAUTH_DEMO_USER.oauth_request() FROM DUAL;
+
+-- Parse a JSON response to extract the token
+SELECT OAUTH_DEMO_USER.extract_access_token('{"access_token":"token-value"}') FROM DUAL;
+
+-- Get just the access token directly
+SELECT OAUTH_DEMO_USER.get_access_token() FROM DUAL;
+```
+
+### Using the Access Token with APIs
+
+Once you have the access token, you can use it in subsequent API calls:
+
+```sql
+DECLARE
+  token VARCHAR2(4000);
+BEGIN
+  -- Get the token
+  token := OAUTH_DEMO_USER.get_access_token();
+
+  -- Use the token in an API call
+  -- Implementation depends on your specific API requirements
+END;
 ```
 
 ## Prerequisites
