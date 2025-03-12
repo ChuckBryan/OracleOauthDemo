@@ -86,8 +86,7 @@ builder.Services.AddOpenIddict()
 
         // Register the ASP.NET Core host and configure the ASP.NET Core-specific options
         options.UseAspNetCore()
-               .EnableTokenEndpointPassthrough()
-               .DisableTransportSecurityRequirement(); // Disable HTTPS requirement
+               .EnableTokenEndpointPassthrough();
     })
     // Register the OpenIddict validation components
     .AddValidation(options =>
@@ -186,11 +185,8 @@ if (app.Environment.IsDevelopment())
 // Use CORS before other middleware
 app.UseCors("AllowAll");
 
-// Remove HTTPS redirection in development
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+// Enable HTTPS redirection
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

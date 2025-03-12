@@ -1,0 +1,10 @@
+1. Export Dev Cert with Password. I made the cert name the same as the Project/EntryPoint: ENTRYPOINT ["dotnet", "OpenIddictDemo.dll"]:
+    dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\OpenIddictDemo.pfx" -p pa55w0rd!   
+2. Added the UserSecretsId to my project file:
+    <UserSecretsId>open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034</UserSecretsId>
+3. Set the Secret: dotnet user-secrets set "Kestrel:Certificates:Development:Password" "pa55w0rd!"
+dotnet user-secrets set "Kestrel:Certificates:Development:Password" "OpenIddictDemo"
+note: the keyvalue will use the correct env var for the password and nothing else will be needed.
+4. Rebuild the docker file: cd c:\projects\OracleOauthDemo && docker build -f OpenIddictDemo/Dockerfile -t opeeniddictdemo .
+5. 
+

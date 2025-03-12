@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:5112
+@baseUrl = https://localhost:7104
 @tokenEndpoint = {{baseUrl}}/connect/token
 @clientId = test-client
 @clientSecret = test-secret
