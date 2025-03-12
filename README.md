@@ -272,6 +272,80 @@ Demonstrates how to use the obtained OAuth token to make authenticated API calls
 3. Wait for initialization scripts to complete
 4. Access the OpenIddict API at http://localhost:5112
 
+## Setting Up HTTPS in Docker
+
+### Overview
+
+This project supports HTTPS in Docker containers, which is essential for secure API communication. Below are the steps taken to enable HTTPS support.
+
+### Steps to Enable HTTPS
+
+1. **Generate a Development Certificate**
+
+   ```powershell
+   dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\OpenIddictDemo.pfx" -p pa55w0rd!
+   dotnet dev-certs https --trust
+   ```
+
+   This creates a self-signed certificate specifically named after the project's entry point assembly.
+
+2. **Add UserSecretsId to the Project File**
+
+   ```xml
+   <UserSecretsId>open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034</UserSecretsId>
+   ```
+
+   This enables secure storage of sensitive configuration values.
+
+3. **Store Certificate Password in User Secrets**
+
+   ```powershell
+   dotnet user-secrets set "Kestrel:Certificates:Default:Password" "pa55w0rd!"
+   ```
+
+   This securely stores the certificate password without hardcoding it in configuration files.
+
+4. **Configure Docker Compose for HTTPS**
+   The `docker-compose.yml` file includes:
+
+   ```yaml
+   openiddict-api:
+     // ...other settings...
+     ports:
+       - "5112:80"
+       - "7104:443"
+     environment:
+       - USER_SECRETS_ID=open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034
+       - ASPNETCORE_ENVIRONMENT=Development
+       - ASPNETCORE_URLS=https://+:443;http://+:80
+       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/OpenIddictDemo.pfx
+     volumes:
+       - ~/.aspnet/https:/https:ro
+       - ~/APPDATA/Roaming/microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+   ```
+
+   This configuration:
+
+   - Maps both HTTP and HTTPS ports
+   - Sets the certificate path in the container
+   - Mounts certificate and user secrets volumes
+
+5. **Build and Run the Container**
+   ```powershell
+   docker build -f OpenIddictDemo/Dockerfile -t openiddictdemo .
+   docker-compose up -d openiddict-api
+   ```
+
+### Accessing the API
+
+- HTTP: http://localhost:5112
+- HTTPS: https://localhost:7104
+
+### References
+
+- [Official Microsoft Documentation: Hosting ASP.NET Core images with Docker Compose over HTTPS](https://learn.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-9.0)
+- [YouTube Tutorial: How to add HTTPS to a .NET Docker Container](https://www.youtube.com/watch?v=lcaDDxJv260)
+
 ## Contributing
 
 Feel free to submit issues and enhancement requests.

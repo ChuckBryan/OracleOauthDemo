@@ -20,18 +20,19 @@ services:
     build:
       context: .
       dockerfile: OpenIddictDemo/Dockerfile
-    image: opeeniddictdemo
+    image: openiddictdemo
     container_name: openiddict-api
     ports:
       - "5112:80"
       - "7104:443"
     environment:
+      - USER_SECRETS_ID=open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=pa55w0rd!
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/OpenIddictDemo.pfx
     volumes:
       - ~/.aspnet/https:/https:ro
+      - ~/APPDATA/Roaming/microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
     depends_on:
       - mssql
     networks:
