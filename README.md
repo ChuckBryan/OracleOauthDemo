@@ -346,6 +346,32 @@ This project supports HTTPS in Docker containers, which is essential for secure 
 - [Official Microsoft Documentation: Hosting ASP.NET Core images with Docker Compose over HTTPS](https://learn.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-9.0)
 - [YouTube Tutorial: How to add HTTPS to a .NET Docker Container](https://www.youtube.com/watch?v=lcaDDxJv260)
 
+## Certificates and Scripts
+
+### Certificates Directory
+
+The `certs` directory contains the following files:
+
+- `openiddict-api.crt`: The public certificate file.
+- `openiddict-api.pem`: The private key file.
+- `openiddict-api.pfx`: The combined certificate and private key file in PKCS#12 format.
+
+These certificates are used to secure the OpenIddict API with HTTPS. The certificates were created using OpenSSL to specify the Common Name (CN).
+
+### Scripts Directory
+
+The `scripts` directory contains the following files:
+
+- `add-cert-to-wallet.sh`: Script to add the certificate to the Oracle wallet.
+- `create_wallet.sh`: Script to create a new Oracle wallet.
+- `verify_wallet.sh`: Script to verify the contents of the Oracle wallet.
+
+These scripts are used to create the Oracle wallet and import the certificate that was exported from the API.
+
+### Note on Certificate Creation
+
+The certificates were created using OpenSSL instead of the .NET dev-certs tool to allow specifying the Common Name (CN).
+
 ## Contributing
 
 Feel free to submit issues and enhancement requests.
