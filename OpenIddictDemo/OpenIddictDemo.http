@@ -1,4 +1,4 @@
-@baseUrl = https://localhost:7104
+@baseUrl = https://openiddict-api:7104
 @tokenEndpoint = {{baseUrl}}/connect/token
 @clientId = test-client
 @clientSecret = test-secret
