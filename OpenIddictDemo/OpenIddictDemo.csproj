@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <UserSecretsId>open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
