@@ -29,9 +29,9 @@ services:
       - USER_SECRETS_ID=open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/OpenIddictDemo.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/openiddict-api.pfx
     volumes:
-      - ~/.aspnet/https:/https:ro
+      - ./certs:/https:ro
       - ~/APPDATA/Roaming/microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
     depends_on:
       - mssql
