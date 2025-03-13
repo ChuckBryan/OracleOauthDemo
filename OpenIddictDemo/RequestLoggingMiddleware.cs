@@ -1,42 +1,43 @@
+using System.IO;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Text;
 
-namespace OpenIddictDemo;
-
-public class RequestLoggingMiddleware
+namespace OpenIddictDemo
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<RequestLoggingMiddleware> _logger;
-
-    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+    public class RequestLoggingMiddleware
     {
-        _next = next;
-        _logger = logger;
-    }
+        private readonly RequestDelegate _next;
+        private readonly ILogger<RequestLoggingMiddleware> _logger;
 
-    public async Task InvokeAsync(HttpContext context)
-    {
-        // Only log token endpoint requests
-        if (context.Request.Path.StartsWithSegments("/connect/token"))
+        public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+        {
+            _next = next;
+            _logger = logger;
+        }
+
+        public async Task InvokeAsync(HttpContext context)
         {
             context.Request.EnableBuffering();
 
-            // Read the request body
-            using var reader = new StreamReader(
-                context.Request.Body,
-                encoding: Encoding.UTF8,
-                detectEncodingFromByteOrderMarks: false,
-                leaveOpen: true);
+            var request = context.Request;
+            var requestBodyContent = await ReadRequestBodyAsync(request);
 
-            var body = await reader.ReadToEndAsync();
+            _logger.LogInformation($"Incoming request: {request.Method} {request.Path}");
+            _logger.LogInformation($"Request Body: {requestBodyContent}");
 
-            // Log the raw request body
-            _logger.LogInformation("Raw token request body: {RequestBody}", body);
+            // Reset the request body stream position so the next middleware can read it
+            request.Body.Position = 0;
 
-            // Reset the request body position for the next middleware
-            context.Request.Body.Position = 0;
+            await _next(context);
         }
 
-        await _next(context);
+        private async Task<string> ReadRequestBodyAsync(HttpRequest request)
+        {
+            using (var reader = new StreamReader(request.Body, leaveOpen: true))
+            {
+                return await reader.ReadToEndAsync();
+            }
+        }
     }
 }
