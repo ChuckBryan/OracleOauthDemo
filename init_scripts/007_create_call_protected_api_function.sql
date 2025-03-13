@@ -21,12 +21,16 @@ BEGIN
   -- Debug output
   DBMS_OUTPUT.PUT_LINE('Using token: ' || SUBSTR(token, 1, 30) || '...');
   
+  -- Set wallet for HTTPS connection with auto-login (no password needed)
+  UTL_HTTP.set_wallet('file:/etc/ora_wallet', NULL);
+  
   -- Open HTTP request to the protected API
   http_req := UTL_HTTP.begin_request(api_url, 'GET', UTL_HTTP.http_version_1_1);
 
   -- Set Authorization header with bearer token
   UTL_HTTP.set_header(http_req, 'Authorization', 'Bearer ' || token);
   UTL_HTTP.set_header(http_req, 'Content-Type', 'application/json');
+  UTL_HTTP.set_header(http_req, 'Host', 'openiddict-api:443');  -- Added Host header with correct port
 
   -- Get the response
   http_resp := UTL_HTTP.get_response(http_req);

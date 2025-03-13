@@ -272,79 +272,110 @@ Demonstrates how to use the obtained OAuth token to make authenticated API calls
 3. Wait for initialization scripts to complete
 4. Access the OpenIddict API at http://localhost:5112
 
-## Setting Up HTTPS in Docker
+## Setting Up Certificates
 
 ### Overview
 
-This project supports HTTPS in Docker containers, which is essential for secure API communication. Below are the steps taken to enable HTTPS support.
+This project requires secure HTTPS communication between services. For development, we use self-signed certificates with a specific Common Name (CN) to match our service hostname.
 
-### Steps to Enable HTTPS
+### Creating Certificates with OpenSSL
 
-1. **Generate a Development Certificate**
+Unlike using the standard .NET dev-certs tool, we use OpenSSL to create certificates with a specific CN that matches our service hostname (`openiddict-api`). This is critical for Oracle's certificate validation which requires hostname matching.
 
-   ```powershell
-   dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\OpenIddictDemo.pfx" -p pa55w0rd!
-   dotnet dev-certs https --trust
-   ```
+```bash
+# Example of creating a self-signed certificate with OpenSSL
+openssl req -x509 -newkey rsa:4096 -keyout openiddict-api.pem -out openiddict-api.crt -days 365 -nodes -subj "/C=US/ST=Virginia/L=Virginia Beach/O=Marathon Consulting, LLC/OU=IT/CN=openiddict-api"
+```
 
-   This creates a self-signed certificate specifically named after the project's entry point assembly.
+### Cross-Platform Development with WSL and Windows
 
-2. **Add UserSecretsId to the Project File**
+If you're working in a mixed environment with both Windows and WSL, you'll need certificates that work in both environments. Based on [this article](https://www.fearofoblivion.com/setting-up-asp-net-dev-certs-for-both-wsl-and-windows), here's how to set up certificates that work across platforms:
 
-   ```xml
-   <UserSecretsId>open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034</UserSecretsId>
-   ```
-
-   This enables secure storage of sensitive configuration values.
-
-3. **Store Certificate Password in User Secrets**
+1. **Generate the certificate in Windows**:
 
    ```powershell
-   dotnet user-secrets set "Kestrel:Certificates:Default:Password" "pa55w0rd!"
+   # Create a new self-signed certificate with the desired CN
+   $cert = New-SelfSignedCertificate -Subject "CN=openiddict-api" -CertStoreLocation cert:\LocalMachine\My -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256
+
+   # Export the certificate with private key to PFX
+   $pwd = ConvertTo-SecureString -String "YourPasswordHere" -Force -AsPlainText
+   $certPath = "C:\projects\OracleOauthDemo\certs\openiddict-api.pfx"
+   Export-PfxCertificate -Cert $cert -FilePath $certPath -Password $pwd
+
+   # Export the public certificate
+   Export-Certificate -Cert $cert -FilePath "C:\projects\OracleOauthDemo\certs\openiddict-api.crt" -Type CERT
    ```
 
-   This securely stores the certificate password without hardcoding it in configuration files.
+2. **Convert to PEM format for Oracle and Linux compatibility**:
 
-4. **Configure Docker Compose for HTTPS**
-   The `docker-compose.yml` file includes:
-
-   ```yaml
-   openiddict-api:
-     // ...other settings...
-     ports:
-       - "5112:80"
-       - "7104:443"
-     environment:
-       - USER_SECRETS_ID=open-iddict-demo-027313c3-0f57-44de-bbec-66690428a034
-       - ASPNETCORE_ENVIRONMENT=Development
-       - ASPNETCORE_URLS=https://+:443;http://+:80
-       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/OpenIddictDemo.pfx
-     volumes:
-       - ~/.aspnet/https:/https:ro
-       - ~/APPDATA/Roaming/microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
-   ```
-
-   This configuration:
-
-   - Maps both HTTP and HTTPS ports
-   - Sets the certificate path in the container
-   - Mounts certificate and user secrets volumes
-
-5. **Build and Run the Container**
    ```powershell
-   docker build -f OpenIddictDemo/Dockerfile -t openiddictdemo .
-   docker-compose up -d openiddict-api
+   # Use OpenSSL to convert PFX to PEM format
+   openssl pkcs12 -in "C:\projects\OracleOauthDemo\certs\openiddict-api.pfx" -out "C:\projects\OracleOauthDemo\certs\openiddict-api.pem" -nodes -password pass:YourPasswordHere
    ```
 
-### Accessing the API
+3. **Trust the certificate in Windows**:
 
-- HTTP: http://localhost:5112
-- HTTPS: https://localhost:7104
+   ```powershell
+   # Import the certificate to the Trusted Root store
+   Import-Certificate -FilePath "C:\projects\OracleOauthDemo\certs\openiddict-api.crt" -CertStoreLocation cert:\LocalMachine\Root
+   ```
+
+4. **Trust the certificate in WSL** (if using WSL):
+
+   ```bash
+   # Copy to WSL if needed
+   cp /mnt/c/projects/OracleOauthDemo/certs/openiddict-api.crt /tmp/
+
+   # Install in WSL trusted store
+   sudo cp /tmp/openiddict-api.crt /usr/local/share/ca-certificates/
+   sudo update-ca-certificates
+   ```
+
+5. **Configure the certificate in ASP.NET Core**:
+
+   ```csharp
+   // In Program.cs
+   builder.WebHost.ConfigureKestrel(options =>
+   {
+       options.ListenAnyIP(5000); // HTTP
+       options.ListenAnyIP(5001, listOptions =>
+       {
+           listOptions.UseHttps("path/to/openiddict-api.pfx", "YourPasswordHere");
+       }); // HTTPS
+   });
+   ```
+
+### Oracle Wallet Setup for HTTPS
+
+After creating the certificates, they need to be imported into an Oracle wallet to enable secure HTTPS communication from the database:
+
+1. Create the wallet structure and place certificates in the `certs` directory
+2. Run the setup scripts in the Oracle container:
+
+   ```bash
+   docker exec -it oracle bash -c "cd /etc/ora_wallet/scripts && ./create_wallet.sh && ./add-cert-to-wallet.sh && ./check_wallet_files.sh"
+   ```
+
+Alternatively, use the provided PowerShell script:
+
+```powershell
+.\run_create_wallet.ps1
+```
+
+### Certificate Path Mapping in Docker Compose
+
+When running services in Docker, make sure to map the certificate paths correctly:
+
+```yaml
+volumes:
+  - ./certs:/https:ro # For ASP.NET Core service
+  - ./certs:/etc/ora_wallet/certs:ro # For Oracle service
+```
 
 ### References
 
-- [Official Microsoft Documentation: Hosting ASP.NET Core images with Docker Compose over HTTPS](https://learn.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-9.0)
-- [YouTube Tutorial: How to add HTTPS to a .NET Docker Container](https://www.youtube.com/watch?v=lcaDDxJv260)
+- [Setting up ASP.NET Core dev certs for both WSL and Windows](https://www.fearofoblivion.com/setting-up-asp-net-dev-certs-for-both-wsl-and-windows)
+- [Oracle Wallet Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/dbseg/configuring-secure-sockets-layer-authentication.html#GUID-7F255806-783F-4C46-8684-FD296DBA32C6)
 
 ## Oracle Wallet Configuration for HTTPS
 

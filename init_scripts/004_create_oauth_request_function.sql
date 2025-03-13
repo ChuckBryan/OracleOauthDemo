@@ -1,23 +1,22 @@
 ALTER SESSION SET CONTAINER=FREEPDB1;
 
--- Create the oauth_request function under OAUTH_DEMO_USER schema
--- This function only handles the HTTP request
-CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.oauth_request RETURN VARCHAR2 AS
+CREATE OR REPLACE FUNCTION oauth_request RETURN VARCHAR2 AS
   http_req   UTL_HTTP.req;
   http_resp  UTL_HTTP.resp;
   url        VARCHAR2(200) := 'https://openiddict-api:443/connect/token';
   client_id  VARCHAR2(200) := 'test-client';
   client_secret VARCHAR2(200) := 'test-secret';
   params     VARCHAR2(400);
-  buffer     VARCHAR2(2000);
+  buffer     VARCHAR2(32767);
+  response   VARCHAR2(32767) := '';
   wallet_path VARCHAR2(200) := 'file:/etc/ora_wallet';
   err_code   NUMBER;
   err_msg    VARCHAR2(4000);
 BEGIN
-  -- Set detailed debugging
-  UTL_HTTP.set_detailed_excp_support(TRUE);
-  
-  -- Set wallet for HTTPS connection with auto-login (no password needed)
+  -- Debug output for initial setup
+  DBMS_OUTPUT.PUT_LINE('Starting oauth_request function...');
+
+  -- Set wallet for HTTPS connection
   BEGIN
     DBMS_OUTPUT.PUT_LINE('Setting wallet: ' || wallet_path);
     UTL_HTTP.set_wallet(wallet_path, NULL);
@@ -28,62 +27,92 @@ BEGIN
       RAISE;
   END;
 
+  -- Set detailed exception support and timeout
+  UTL_HTTP.set_detailed_excp_support(TRUE);
+  UTL_HTTP.set_transfer_timeout(60);
+  
   -- Prepare request parameters
   params := 'client_id='     || UTL_URL.escape(client_id, TRUE)      || '&' ||
-            'client_secret=' || UTL_URL.escape(client_secret, TRUE)  || '&' ||
-            'grant_type=client_credentials';
+           'client_secret=' || UTL_URL.escape(client_secret, TRUE)  || '&' ||
+           'grant_type=client_credentials'                          || '&' ||
+           'scope=api';
             
-  -- Debug output
-  DBMS_OUTPUT.PUT_LINE('Making request to: ' || url);
-  DBMS_OUTPUT.PUT_LINE('With parameters: ' || SUBSTR(params, 1, 50) || '...');
+  -- Debug output for request details
+  DBMS_OUTPUT.PUT_LINE('Request URL: ' || url);
+  DBMS_OUTPUT.PUT_LINE('Request parameters: ' || params);
+  DBMS_OUTPUT.PUT_LINE('Content-Length: ' || LENGTH(params));
+            
+  -- Make the request
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('Initializing HTTP request...');
+    http_req := UTL_HTTP.begin_request(url, 'POST', UTL_HTTP.http_version_1_1);
+    DBMS_OUTPUT.PUT_LINE('Request initialized successfully');
+    
+    -- Set headers
+    UTL_HTTP.set_header(http_req, 'Content-Type', 'application/x-www-form-urlencoded');
+    UTL_HTTP.set_header(http_req, 'Content-Length', LENGTH(params));
+    UTL_HTTP.set_header(http_req, 'Host', 'openiddict-api:443');
+    UTL_HTTP.set_header(http_req, 'Accept', '*/*');
+    UTL_HTTP.set_header(http_req, 'User-Agent', 'Oracle UTL_HTTP');
+    DBMS_OUTPUT.PUT_LINE('Headers set successfully');
+
+    -- Write request body
+    DBMS_OUTPUT.PUT_LINE('Writing request body...');
+    UTL_HTTP.write_text(http_req, params);
+    DBMS_OUTPUT.PUT_LINE('Request body written successfully');
+
+    -- Get response
+    DBMS_OUTPUT.PUT_LINE('Getting response...');
+    http_resp := UTL_HTTP.get_response(http_req);
+    DBMS_OUTPUT.PUT_LINE('Response received. Status: ' || http_resp.status_code || ' ' || http_resp.reason_phrase);
+
+    -- Read response headers
+    FOR i IN 1..UTL_HTTP.get_header_count(http_resp) LOOP
+      UTL_HTTP.get_header(http_resp, i, err_msg, buffer);
+      DBMS_OUTPUT.PUT_LINE('Response header ' || i || ': ' || err_msg || ': ' || buffer);
+    END LOOP;
+
+    -- Read response body
+    DBMS_OUTPUT.PUT_LINE('Reading response body...');
+    BEGIN
+      LOOP
+        UTL_HTTP.read_text(http_resp, buffer, 32767);
+        response := response || buffer;
+        DBMS_OUTPUT.PUT_LINE('Read chunk: ' || SUBSTR(buffer, 1, 255));
+      END LOOP;
+    EXCEPTION
+      WHEN UTL_HTTP.end_of_body THEN
+        DBMS_OUTPUT.PUT_LINE('Finished reading response body');
+        NULL;
+    END;
+
+    -- Close response
+    UTL_HTTP.end_response(http_resp);
+    DBMS_OUTPUT.PUT_LINE('Response closed successfully');
+    
+    -- Debug final response
+    DBMS_OUTPUT.PUT_LINE('Final response length: ' || LENGTH(response));
+    DBMS_OUTPUT.PUT_LINE('Final response (first 255 chars): ' || SUBSTR(response, 1, 255));
+    
+    RETURN response;
+    
+  EXCEPTION
+    WHEN OTHERS THEN
+      err_code := SQLCODE;
+      err_msg := SQLERRM;
+      DBMS_OUTPUT.PUT_LINE('Error in request: ' || err_code || ': ' || err_msg);
+      RAISE;
+  END;
   
-  -- Open HTTP request
-  http_req := UTL_HTTP.begin_request(url, 'POST', UTL_HTTP.http_version_1_1);
-
-  -- Set headers
-  UTL_HTTP.set_header(http_req, 'Content-Type', 'application/x-www-form-urlencoded');
-  UTL_HTTP.set_header(http_req, 'Content-Length', LENGTH(params));
-
-  -- Write parameters directly in the HTTP request body
-  UTL_HTTP.write_text(http_req, params);
-
-  -- Get the response
-  http_resp := UTL_HTTP.get_response(http_req);
-  DBMS_OUTPUT.PUT_LINE('Response received: ' || http_resp.status_code || ' ' || http_resp.reason_phrase);
-  
-  UTL_HTTP.read_text(http_resp, buffer);
-
-  -- Close HTTP response
-  UTL_HTTP.end_response(http_resp);
-
-  RETURN buffer; -- Return the full JSON response
 EXCEPTION
   WHEN OTHERS THEN
-    -- Make sure to close the HTTP response if opened
-    BEGIN
-      IF http_resp.private_hndl IS NOT NULL THEN
-        UTL_HTTP.end_response(http_resp);
-      END IF;
-    EXCEPTION
-      WHEN OTHERS THEN
-        NULL; -- Ignore error in cleanup
-    END;
-    
-    -- Get error details
-    err_code := SQLCODE;
-    err_msg := SQLERRM;
-    
-    -- Provide detailed error message
-    DBMS_OUTPUT.PUT_LINE('Error ' || err_code || ': ' || err_msg);
-    
-    -- For ORA-28759: failure to open file
-    IF err_code = -28759 THEN
-      DBMS_OUTPUT.PUT_LINE('Wallet file access error. Check:');
-      DBMS_OUTPUT.PUT_LINE('1. Wallet path: ' || wallet_path);
-      DBMS_OUTPUT.PUT_LINE('2. File permissions');
-      DBMS_OUTPUT.PUT_LINE('3. Whether cwallet.sso exists at this location');
+    -- Clean up if needed
+    IF http_resp.private_hndl IS NOT NULL THEN
+      UTL_HTTP.end_response(http_resp);
     END IF;
-    
-    RETURN 'Error occurred: ' || err_msg;
+    -- Log and return error
+    err_msg := SQLERRM;
+    DBMS_OUTPUT.PUT_LINE('Final error: ' || err_msg);
+    RETURN '{"error":"' || REPLACE(err_msg, '"', '\"') || '"}';
 END;
 /
