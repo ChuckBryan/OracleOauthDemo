@@ -16,6 +16,5 @@ SELECT OAUTH_DEMO_USER.get_access_token() AS access_token FROM DUAL;
 -- Now that we confirmed token retrieval works, let's test calling the protected API
 -- Execute this after confirming the above token tests work
 
--- Test calling the protected API endpoint
-SELECT OAUTH_DEMO_USER.call_protected_api('http://openiddict-api:80/api/testapi') 
-AS protected_api_response FROM DUAL;
+-- Test the call_protected_api function
+SELECT OAUTH_DEMO_USER.call_protected_api() FROM DUAL;
