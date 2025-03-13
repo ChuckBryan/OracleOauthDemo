@@ -2,7 +2,7 @@ ALTER SESSION SET CONTAINER=FREEPDB1;
 
 -- Create a function to call a protected API using the OAuth token
 CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.call_protected_api(
-  api_url VARCHAR2 DEFAULT 'http://openiddict-api:80/api/testapi'
+  api_url VARCHAR2 DEFAULT 'https://openiddict-api:443/api/testapi'
 ) RETURN VARCHAR2 AS
   http_req   UTL_HTTP.req;
   http_resp  UTL_HTTP.resp;
