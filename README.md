@@ -346,6 +346,123 @@ This project supports HTTPS in Docker containers, which is essential for secure 
 - [Official Microsoft Documentation: Hosting ASP.NET Core images with Docker Compose over HTTPS](https://learn.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-9.0)
 - [YouTube Tutorial: How to add HTTPS to a .NET Docker Container](https://www.youtube.com/watch?v=lcaDDxJv260)
 
+## Oracle Wallet Configuration for HTTPS
+
+### Overview
+
+The project uses Oracle Wallet to securely store certificates and enable HTTPS communication between the Oracle database and the OpenIddict API. This section explains how the wallet is configured and how to troubleshoot common issues.
+
+### Wallet Directory Structure
+
+The wallet is stored in the `/etc/ora_wallet` directory inside the Oracle container and is mounted from the host's `./wallet` directory. The structure is as follows:
+
+```
+wallet/
+├── cwallet.sso          # Auto-login wallet file (required for UTL_HTTP with HTTPS)
+├── ewallet.p12          # Password-protected wallet file
+├── certs/               # Contains certificates
+│   ├── openiddict-api.crt  # Certificate file
+│   ├── openiddict-api.pem  # Private key file
+│   └── openiddict-api.pfx  # Combined certificate and key (PKCS#12)
+└── scripts/             # Scripts for wallet management
+    ├── create_wallet.sh
+    ├── add-cert-to-wallet.sh
+    ├── verify_wallet.sh
+    └── check_wallet_files.sh
+```
+
+### Key Scripts
+
+1. **create_wallet.sh**: Creates the Oracle Wallet with auto-login enabled
+
+   ```bash
+   # Main operations performed:
+   orapki wallet create -wallet /etc/ora_wallet -pwd <password> -auto_login
+   ```
+
+2. **add-cert-to-wallet.sh**: Adds the OpenIddict API certificate to the wallet
+
+   ```bash
+   # Main operations performed:
+   orapki wallet add -wallet /etc/ora_wallet -trusted_cert -cert /etc/ora_wallet/certs/openiddict-api.crt -pwd <password>
+   ```
+
+3. **check_wallet_files.sh**: Diagnostics script to verify wallet configuration
+   ```bash
+   # Checks for:
+   # - Wallet directory and file existence
+   # - Certificate presence
+   # - Permissions
+   # - Trusted certificates
+   ```
+
+### Important Notes
+
+1. **Auto-login SSO Wallet File**: The `cwallet.sso` file is critical for UTL_HTTP to work with HTTPS. Without this file, you'll get the error `ORA-28759: failure to open file`.
+
+2. **Certificate Requirements**: The certificate's Common Name (CN) must match the hostname used in the connection URL (in this case, 'openiddict-api').
+
+3. **Permissions**: When running in Docker, file permissions are important. The Oracle user must have read access to the wallet files.
+
+### PL/SQL Function Configuration
+
+The `oauth_request` function is configured to use the wallet:
+
+```sql
+-- Setting up the wallet in PL/SQL
+UTL_HTTP.set_wallet('file:/etc/ora_wallet', NULL);
+```
+
+### Troubleshooting Wallet Issues
+
+1. **ORA-28759: failure to open file**
+
+   - Ensure `cwallet.sso` exists in the wallet directory
+   - Verify the wallet path is correct: `file:/etc/ora_wallet`
+   - Check file permissions
+
+2. **ORA-29024: Certificate validation failure**
+
+   - Certificate may not be properly imported as a trusted certificate
+   - Run `add-cert-to-wallet.sh` to properly add the certificate
+
+3. **ORA-29273: HTTP request failed**
+   - Certificate CN may not match hostname
+   - Network connectivity issues
+   - SSL/TLS version incompatibility
+
+### Creating a New Certificate
+
+If you need to create a new certificate with a specific CN:
+
+```bash
+# Example of creating a self-signed certificate with OpenSSL
+openssl req -x509 -newkey rsa:4096 -keyout openiddict-api.pem -out openiddict-api.crt -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/OU=Department/CN=openiddict-api"
+```
+
+### Docker Compose Configuration
+
+The `docker-compose.yml` mounts the required directories:
+
+```yaml
+volumes:
+  - ./wallet:/etc/ora_wallet
+  - ./certs:/etc/ora_wallet/certs
+  - ./scripts:/etc/ora_wallet/scripts
+```
+
+### Running the Wallet Setup
+
+To initialize or update the wallet:
+
+1. Create the wallet structure on the host
+2. Place certificates in the `certs` directory
+3. Run the setup scripts in the Oracle container:
+
+   ```bash
+   docker exec -it oracle bash -c "cd /etc/ora_wallet/scripts && ./create_wallet.sh && ./add-cert-to-wallet.sh && ./check_wallet_files.sh"
+   ```
+
 ## Certificates and Scripts
 
 ### Certificates Directory

@@ -35,6 +35,21 @@ BEGIN
     privilege   => 'resolve'
   );
 
+  -- Add SSL_client privilege for HTTPS connections for OAUTH_DEMO_USER
+  DBMS_NETWORK_ACL_ADMIN.add_privilege(
+    acl         => 'openiddict_acl.xml',
+    principal   => 'OAUTH_DEMO_USER',
+    is_grant    => TRUE,
+    privilege   => 'use-client-certificates'
+  );
+  
+  DBMS_NETWORK_ACL_ADMIN.add_privilege(
+    acl         => 'openiddict_acl.xml',
+    principal   => 'OAUTH_DEMO_USER',
+    is_grant    => TRUE,
+    privilege   => 'use-passwords'
+  );
+
   -- Assign the ACL to the OpenIddict API host
   DBMS_NETWORK_ACL_ADMIN.assign_acl (
     acl         => 'openiddict_acl.xml',
