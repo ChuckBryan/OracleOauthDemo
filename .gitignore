@@ -11,6 +11,7 @@
 # Oracle Wallet files
 wallet/
 */wallet/
+wallet/cwallet.sso
 cwallet.sso*
 ewallet.p12*
 *.lck
