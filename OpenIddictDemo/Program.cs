@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using OpenIddictDemo.Data;
+using OpenIddictDemo;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Logging;
@@ -55,7 +56,10 @@ builder.Services.AddAuthorization();
 // Register the database context with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure();
+    });
     options.UseOpenIddict();
 });
 
@@ -193,63 +197,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-// This class is used to seed test data for our OAuth server
-public class TestDataSeeder : IHostedService
-{
-    private readonly IServiceProvider _serviceProvider;
-
-    public TestDataSeeder(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        using var scope = _serviceProvider.CreateScope();
-
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
-
-        try
-        {
-            // Only ensure database is created if we can't connect
-            if (!context.Database.CanConnect())
-            {
-                await context.Database.EnsureCreatedAsync(cancellationToken);
-                Console.WriteLine("Database created by TestDataSeeder.");
-            }
-
-            // Check if the test client already exists
-            if (await manager.FindByClientIdAsync("test-client", cancellationToken) is null)
-            {
-                // Create a new client application
-                await manager.CreateAsync(new OpenIddictApplicationDescriptor
-                {
-                    ClientId = "test-client",
-                    ClientSecret = "test-secret",
-                    DisplayName = "Test Client Application",
-                    Permissions =
-                    {
-                        OpenIddictConstants.Permissions.Endpoints.Token,
-                        OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
-                        OpenIddictConstants.Permissions.Prefixes.Scope + "api"
-                    }
-                }, cancellationToken);
-
-                Console.WriteLine("Created test client: test-client with secret: test-secret");
-            }
-            else
-            {
-                Console.WriteLine("Test client already exists, skipping creation.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in TestDataSeeder: {ex.Message}");
-            // Log the error but don't throw - allow the application to continue
-        }
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-}
