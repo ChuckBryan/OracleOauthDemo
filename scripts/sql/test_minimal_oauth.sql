@@ -1,6 +1,6 @@
 ALTER SESSION SET CONTAINER=FREEPDB1;
 
-CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.oauth_request RETURN VARCHAR2 IS
+CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.test_oauth RETURN VARCHAR2 IS
   req   UTL_HTTP.req;
   resp  UTL_HTTP.resp;
   url   VARCHAR2(200) := 'https://openiddict-api:443/connect/token';
@@ -24,5 +24,12 @@ BEGIN
   END;
   UTL_HTTP.end_response(resp);
   RETURN res;
-END oauth_request;
+END test_oauth;
+/
+
+-- Test the function
+SET SERVEROUTPUT ON;
+BEGIN
+  DBMS_OUTPUT.PUT_LINE(OAUTH_DEMO_USER.test_oauth());
+END;
 /

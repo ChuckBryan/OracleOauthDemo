@@ -1,0 +1,76 @@
+We’ll start by creating a new wallet using Oracle’s orapki utility and protecting it with a strong password. By default, the Oracle Wallet is located in the directory specified by the WALLET_LOCATION parameter in the sqlnet.ora file.
+
+net_service_name=
+    (DESCRIPTION =
+       (ADDRESS=(PROTOCOL=tcps)(HOST=sales-svr)(PORT=1234))
+       (SECURITY=(WALLET_LOCATION=SYSTEM))
+       (CONNECT_DATA=(SERVICE_NAME=sales.us.example.com))
+     ) 
+If WALLET_LOCATION is not specified, it is typically located in the $ORACLE_HOME/network/admin directory.
+
+orapki wallet create creates a new directory holding cwallet.sso and ewallet.p12. Enabling auto login creates an obfuscated copy of the wallet, which is then used automatically without requiring human interventions to supply the necessary passwords.
+
+sh-4.2$ orapki wallet create -wallet wallet -pwd [your_password] -auto_login
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ 
+We need to import the whole chain of certificates in the wallet. The next code downloads and split them in different files that are renamed according to the certificate name (CN).
+
+sh-4.2$ openssl s_client -showcerts -verify 5 -connect oauth2.googleapis.com:443 < /dev/null |
+>    awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/{ if(/BEGIN CERTIFICATE/){a++}; out="cert"a".pem"; print >out}'
+verify depth is 5
+depth=3 C = BE, O = GlobalSign nv-sa, OU = Root CA, CN = GlobalSign Root CA
+verify return:1
+depth=2 C = US, O = Google Trust Services LLC, CN = GTS Root R1
+verify return:1
+depth=1 C = US, O = Google Trust Services LLC, CN = GTS CA 1C3
+verify return:1
+depth=0 CN = *.googleapis.com
+verify return:1
+DONE
+sh-4.2$ for cert in *.pem; do 
+>         newname=$(openssl x509 -noout -subject -in $cert | sed -nE 's/.*CN ?= ?(.*)/\1/; s/[ ,.*]/_/g; s/__/_/g; s/_-_/-/; s/^_//g;p' | tr '[:upper:]' '[:lower:]').pem
+>         echo "${newname}"; mv "${cert}" "${newname}" 
+> done
+googleapis_com.pem
+gts_ca_1c3.pem
+gts_root_r1.pem
+googleapis_com.pem
+sh-4.2$ ls -lhtr *.pem
+-rw-r--r-- 1 oracle oinstall 9.2K May 28 13:50 googleapis_com.pem
+-rw-r--r-- 1 oracle oinstall 1.9K May 28 13:54 gts_root_r1.pem
+-rw-r--r-- 1 oracle oinstall 2.0K May 28 13:54 gts_ca_1c3.pem
+sh-4.2$ 
+Now we can import the certificates into the wallet. This ensures that your Oracle Database trusts them when making HTTPS requests.
+
+sh-4.2$ orapki wallet add -wallet wallet -trusted_cert -cert "./googleapis_com.pem" -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ orapki wallet add -wallet wallet -trusted_cert -cert "./gts_root_r1.pem" -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ orapki wallet add -wallet wallet -trusted_cert -cert "./gts_ca_1c3.pem" -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Operation is successfully completed.
+sh-4.2$ 
+Let’s check the certificated added to the wallet.
+
+sh-4.2$ orapki wallet display -wallet wallet -pwd [your_password]
+Oracle PKI Tool Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+Requested Certificates: 
+User Certificates:
+Trusted Certificates: 
+Subject:        CN=GTS Root R1,O=Google Trust Services LLC,C=US
+Subject:        CN=*.googleapis.com
+Subject:        CN=GTS CA 1C3,O=Google Trust Services LLC,C=US
+sh-4.2$ 
