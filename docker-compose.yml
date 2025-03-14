@@ -16,6 +16,10 @@ services:
       - ./wallet:/etc/ora_wallet
       - ./certs:/etc/ora_wallet/certs
       - ./scripts/bash:/etc/ora_wallet/scripts
+      - ./certs/openiddict-api.crt:/etc/pki/ca-trust/source/anchors/openiddict-api.crt:ro
+    command: >
+      sh -c "update-ca-trust &&
+             /opt/oracle/runOracle.sh"
     networks:
       - app-network
 
