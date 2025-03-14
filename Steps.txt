@@ -1,3 +1,6 @@
+If you execute the powershell .\set-docker-aliases.ps1 you will get a set of alias that are helpful.
+
+
 1. Generate the Certificates by running the New-Certificates.ps1 in an elevated terminal
     - will create the following:
         - openiddict-api.crt
@@ -8,3 +11,13 @@
 2. Run the Convert-LineEndings.ps1 to make sure that the bash files use the correct line endings.
     - Please note: the .gitattributes has been updated to specify the LF endings and this script might not be needed.
 3. Run the docker compose up -d to start the services. Make sure that Docker Is Running
+    - Please check the logs for docker logs -f --tail 1 openiddict-api
+        - If the Database was not created in the MSSQL, just docker compose down and then back up again.
+    - Monitor the openiddict-api logs: docker logs -f --tail 1 openiddict-api
+    - Run the Test-Api.ps1
+        - The Token should be retrieved and the Protected API Called
+4. Create the Oracle Wallet
+    - Execute the New-OracleWallet.ps1. This will create the Oracle Wallet and import the cert that was generated for the API
+5. Connect to Oracle
+    - in terminal: docker exec -it oracle-db sqlplus OAUTH_DEMO_USER/DemoPassword123@FREEPDB1
+    - if you get an invalid password, run docker compose down -v to remove the volumes and then re-run docker compose up -db

@@ -1,0 +1,1 @@
+docker exec -it oracle-db sqlplus OAUTH_DEMO_USER/DemoPassword123@FREEPDB1
