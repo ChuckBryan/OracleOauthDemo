@@ -11,11 +11,11 @@ services:
       - APP_USER_PASSWORD=DemoPassword123
     volumes:
       - oracle-data:/opt/oracle/oradata
-      - ./init_scripts:/container-entrypoint-initdb.d
-      - ./startup_scripts:/container-entrypoint-startdb.d
+      - ./scripts/sql/init_scripts:/container-entrypoint-initdb.d
+      - ./scripts/sql/startup_scripts:/container-entrypoint-startdb.d
       - ./wallet:/etc/ora_wallet
       - ./certs:/etc/ora_wallet/certs
-      - ./scripts:/etc/ora_wallet/scripts
+      - ./scripts/bash:/etc/ora_wallet/scripts
     networks:
       - app-network
 

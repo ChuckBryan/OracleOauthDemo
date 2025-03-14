@@ -1,0 +1,10 @@
+1. Generate the Certificates by running the New-Certificates.ps1 in an elevated terminal
+    - will create the following:
+        - openiddict-api.crt
+        - openiddict-api.pem
+        - openiddict-api.pfx
+        - openssl.cnf
+        - Will import the Certificates into the Trusted Root Certificate Store 
+2. Run the Convert-LineEndings.ps1 to make sure that the bash files use the correct line endings.
+    - Please note: the .gitattributes has been updated to specify the LF endings and this script might not be needed.
+3. Run the docker compose up -d to start the services. Make sure that Docker Is Running

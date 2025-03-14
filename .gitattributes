@@ -1,0 +1,6 @@
+# Ensure all Bash scripts use LF endings
+/scripts/bash/*.sh text eol=lf
+
+# Ensure all PowerShell scripts use CRLF endings
+/scripts/Powershell/*.ps1 text eol=crlf
+/scripts/Powershell/*.psm1 text eol=crlf
