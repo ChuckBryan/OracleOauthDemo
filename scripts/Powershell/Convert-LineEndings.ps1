@@ -3,7 +3,7 @@
 
 Write-Host "Converting shell script line endings from CRLF to LF..." -ForegroundColor Cyan
 
-$scripts = Get-ChildItem -Path "scripts" -Filter "*.sh"
+$scripts = Get-ChildItem -Path "scripts/bash" -Filter "*.sh"
 foreach ($script in $scripts) {
     Write-Host "Converting $($script.Name)..." -ForegroundColor Yellow
     $content = Get-Content -Path $script.FullName -Raw
