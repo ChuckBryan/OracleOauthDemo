@@ -1,7 +1,6 @@
 ALTER SESSION SET CONTAINER=FREEPDB1;
 
-
-CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.call_protected_api RETURN VARCHAR2 IS
+CREATE OR REPLACE FUNCTION OAUTH_DEMO_USER.test_api RETURN VARCHAR2 IS
   req   UTL_HTTP.req;
   resp  UTL_HTTP.resp;
   url   VARCHAR2(200) := 'https://openiddict-api:443/api/testapi';
@@ -32,5 +31,9 @@ BEGIN
   
   UTL_HTTP.end_response(resp);
   RETURN res;
-END call_protected_api;
+END test_api;
 /
+
+-- Simple test script with SERVEROUTPUT enabled
+SET SERVEROUTPUT ON;
+SELECT OAUTH_DEMO_USER.test_api() FROM DUAL;
