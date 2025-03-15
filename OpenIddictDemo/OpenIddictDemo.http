@@ -17,5 +17,66 @@ grant_type=client_credentials
 GET {{baseUrl}}/api/testapi
 Authorization: Bearer {{token.response.body.access_token}}
 
+### Process a payment
+POST {{baseUrl}}/api/payment
+Content-Type: application/json
+Authorization: Bearer {{token.response.body.access_token}}
+
+{
+    "userId": "user123",
+    "billId": "BILL2024001",
+    "billCategory": 60,
+    "year": 2024,
+    "billNumber": 4,
+    "customer": {
+        "id": 12345,
+        "primaryName": "John Doe",
+        "secondaryName": "Jane Doe",
+        "phoneNumber": "555-0123",
+        "email": "john.doe@example.com",
+        "address": {
+            "addressLine1": "123 Main St",
+            "addressLine2": "Apt 4B",
+            "addressLine3": "",
+            "city": "Springfield",
+            "state": "VA",
+            "zipCode": "22151",
+            "country": "USA"
+        }
+    },
+    "amount": 150.75,
+    "effectiveDate": "2024-03-14T14:16:50.759Z",
+    "paymentLines": [
+        {
+            "id": "PL001",
+            "code": "TAX2024",
+            "amount": 150.75,
+            "paymentLineAmounts": [
+                {
+                    "type": "BASE",
+                    "amount": 150.75
+                }
+            ]
+        }
+    ],
+    "transactionNumber": 1001,
+    "tender": {
+        "method": {
+            "tenderType": "CREDIT_CARD",
+            "externalId": "TRANS123",
+            "classification": "ELECTRONIC"
+        },
+        "paidBy": "John Doe",
+        "deposit": "DIRECT",
+        "memo": "Property tax payment",
+        "reference": "REF123456"
+    },
+    "externalSystem": {
+        "externalBatchId": 0,
+        "externalBatchNumber": 0,
+        "externalPaymentId": 0
+    }
+}
+
 ### Access Swagger UI
 GET {{baseUrl}}/swagger
