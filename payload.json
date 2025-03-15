@@ -1,0 +1,57 @@
+{
+    "userId": "string",
+    "billId": "string",
+    "billCategory": 60,
+    "year": 2025,
+    "billNumber": 4,
+    "customer": {
+      "id": 2147483647,
+      "primaryName": "string",
+      "secondaryName": "string",
+      "phoneNumber": "string",
+      "email": "string",
+      "address": {
+        "addressLine1": "string",
+        "addressLine2": "string",
+        "addressLine3": "string",
+        "city": "string",
+        "state": "string",
+        "zipCode": "string",
+        "country": "string"
+      }
+    },
+    "amount": 0.01,
+    "effectiveDate": "2025-03-14T14:16:50.759Z",
+    "paymentLines": [
+      {
+        "id": "string",
+        "code": "string",
+        "amount": 0,
+        "paymentLineAmounts": [
+          {
+            "type": "string",
+            "amount": 0
+          }
+        ]
+      }
+    ],
+    "transactionNumber": 0,
+    "tender": {
+      "method": {
+        "tenderType": "string",
+        "externalId": "string",
+        "classification": "string"
+      },
+      "paidBy": "string",
+      "deposit": "string",
+      "memo": "string",
+      "reference": "string"
+    },
+    "externalSystem": {
+      "externalBatchId": 0,
+      "externalBatchNumber": 0,
+      "externalPaymentId": 0
+    }
+  }
+  
+  

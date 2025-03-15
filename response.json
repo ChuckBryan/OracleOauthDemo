@@ -1,0 +1,39 @@
+{
+
+  "paymentId": "string",
+
+  "externalBatchNumber": 0,
+
+  "externalPaymentId": 0,
+
+  "receiptNumber": 0,
+
+  "munisBatchId": "string",
+
+  "paymentLines": [
+
+    {
+
+      "id": "string",
+
+      "code": "string",
+
+      "amount": 0,
+
+      "paymentLineAmounts": [
+
+        {
+
+          "type": "string",
+
+          "amount": 0
+
+        }
+
+      ]
+
+    }
+
+  ]
+
+}
