@@ -12,16 +12,21 @@ namespace OpenIddictDemo.Controllers
         [HttpPost]
         public ActionResult<PaymentResponse> ProcessPayment([FromBody] PaymentModel payment)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             // In a real application, you would process the payment here
             // For this demo, we'll create a simple response
             var response = new PaymentResponse
             {
                 PaymentId = Guid.NewGuid().ToString(),
-                ExternalBatchNumber = 1,
-                ExternalPaymentId = new Random().Next(1000, 9999),
+                ExternalBatchNumber = payment.ExternalSystem.ExternalBatchNumber,
+                ExternalPaymentId = payment.ExternalSystem.ExternalPaymentId,
                 ReceiptNumber = new Random().Next(10000, 99999),
                 MunisBatchId = $"BATCH_{DateTime.UtcNow:yyyyMMdd}",
-                PaymentLines = payment.PaymentLines // Return the same payment lines from the request
+                PaymentLines = payment.PaymentLines
             };
 
             return Ok(response);

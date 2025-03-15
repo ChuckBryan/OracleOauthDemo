@@ -18,43 +18,41 @@ GET {{baseUrl}}/api/testapi
 Authorization: Bearer {{token.response.body.access_token}}
 
 ### Process a payment
-POST {{baseUrl}}/api/payment
+POST {{baseUrl}}/api/Payment
 Content-Type: application/json
 Authorization: Bearer {{token.response.body.access_token}}
 
 {
-    "userId": "user123",
-    "billId": "BILL2024001",
+    "userId": "test-user",
+    "billId": "BILL-001",
     "billCategory": 60,
-    "year": 2024,
+    "year": 2025,
     "billNumber": 4,
     "customer": {
         "id": 12345,
         "primaryName": "John Doe",
-        "secondaryName": "Jane Doe",
-        "phoneNumber": "555-0123",
-        "email": "john.doe@example.com",
+        "secondaryName": "Johnny",
+        "phoneNumber": "+1-555-555-5555",
+        "email": "john@example.com",
         "address": {
             "addressLine1": "123 Main St",
-            "addressLine2": "Apt 4B",
-            "addressLine3": "",
-            "city": "Springfield",
-            "state": "VA",
-            "zipCode": "22151",
+            "city": "Anytown",
+            "state": "ST",
+            "zipCode": "12345",
             "country": "USA"
         }
     },
-    "amount": 150.75,
-    "effectiveDate": "2024-03-14T14:16:50.759Z",
+    "amount": 100.00,
+    "effectiveDate": "2025-03-14T14:16:50.759Z",
     "paymentLines": [
         {
-            "id": "PL001",
-            "code": "TAX2024",
-            "amount": 150.75,
+            "id": "LINE-001",
+            "code": "PMT",
+            "amount": 100.00,
             "paymentLineAmounts": [
                 {
-                    "type": "BASE",
-                    "amount": 150.75
+                    "type": "PRINCIPAL",
+                    "amount": 100.00
                 }
             ]
         }
@@ -63,18 +61,18 @@ Authorization: Bearer {{token.response.body.access_token}}
     "tender": {
         "method": {
             "tenderType": "CREDIT_CARD",
-            "externalId": "TRANS123",
-            "classification": "ELECTRONIC"
+            "externalId": "4111111111111111",
+            "classification": "VISA"
         },
         "paidBy": "John Doe",
-        "deposit": "DIRECT",
-        "memo": "Property tax payment",
-        "reference": "REF123456"
+        "deposit": "123456",
+        "memo": "Payment for services",
+        "reference": "AUTH-12345"
     },
     "externalSystem": {
-        "externalBatchId": 0,
-        "externalBatchNumber": 0,
-        "externalPaymentId": 0
+        "externalBatchId": 1,
+        "externalBatchNumber": 1001,
+        "externalPaymentId": 12345
     }
 }
 
